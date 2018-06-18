@@ -54,8 +54,9 @@ public class Echo {
                                 if (replayJobId == null) {
                                     // re-queue if jobId not yet there but don't do this infinite
                                     message.enqueued++;
-                                    if (message.enqueued < 3) {
-                                        System.err.println("re-queue " + message + " as job_id not found:" + jobId);
+                                    if (message.enqueued < 4) {
+                                        // now that we are decoupled from writing we can wait a bit
+                                        Thread.sleep(1000);
                                         queue.offer(message);
                                     } else {
                                         System.err.println("did not found replay job_id " + jobId + " for " + message);
