@@ -4,7 +4,6 @@ import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -15,43 +14,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 
 public class Echo {
-    public static String decodeHexString(String s) throws DecoderException {
-        return new String(Hex.decodeHex(s.toCharArray()));
-    }
 
-    public static String transformHTTPMessage(String req) {
-        Message msg = new Message(req);
-        return msg.toMessage();
-        // System.err.println("REQUEST\n" + req +"\nEND\n\n");
-//        String[] reqString = req.split("\n");
-//        if (reqString.length == 0)
-//            return req;
-//
-//        String type = reqString[0].split(" ")[0];
-//        String ID = reqString[0].split(" ")[1];
-//        if ("3".equals(type)) {
-//            System.err.println("REPLAY   " + ID + " " + reqString[1]);
-//            // TODO compare status
-//        } else if ("2".equals(type)) {
-//            System.err.println("RESPONSE " + ID + " " + reqString[1]);
-//            // TODO grab job_id from response JSON
-//            for (int i = 0; i < reqString.length; i++) {
-//                if (reqString[i].length() < 2 && i + 1 < reqString.length) {
-//                    // TODO System.err.println(reqString[i+1]);
-//                    break;
-//                }
-//            }
-//        } else if ("1".equals(type)) {
-//            System.err.println("REQUEST  " + ID + " " + reqString[1]);
-//            // TODO if URL contains solution, then put into a queue e.g. on separate thread (+ println) if jobId is not yet in the map
-//            // TODO if jobId was found => rewrite URL
-//        } else {
-//            throw new IllegalStateException("UNKNOWN  " + ID + " " + reqString[1]);
-//        }
-//        return req;
-    }
-
-    public static void main(String[] args) throws DecoderException {
+    public static void main(String[] args) {
         if (args != null) {
             for (String arg : args) {
                 System.out.println(arg);
@@ -100,15 +64,16 @@ public class Echo {
                                 message.setPath(newPath);
                             }
                         } else if (message.getTypeInfo().equals("response")) {
-                            System.err.println("response: " + message);
+                            // System.err.println("response: " + message);
 
                         } else if (message.getTypeInfo().equals("replay")) {
                             // should contain 2 messages: request and response
                             List<Message> messages = allMessages.get(message.id);
                             if (messages != null && messages.size() == 2) {
+                                Message request = messages.get(0);
                                 Message response = messages.get(1);
                                 if (!message.status.equals(response.status))
-                                    System.err.println("status doesn't match " + message + " " + message.status + " vs " + messages.get(0) + " " + message.status);
+                                    System.err.println("status doesn't match " + message.status + " vs " + response.status + " for " + request.getPath());
                                 else if (message.getJobId().length() > 0) {
                                     System.err.println("response job id: " + response.getJobId() + " vs. replay job id: " + message.getJobId());
                                     jobIds.put(response.getJobId(), message.getJobId());
@@ -133,9 +98,13 @@ public class Echo {
             while ((line = stdin.readLine()) != null) {
                 queue.offer(new Message(decodeHexString(line)));
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    static String decodeHexString(String s) throws DecoderException {
+        return new String(Hex.decodeHex(s.toCharArray()));
     }
 
 // the raw parameter contains the following message (a replay in this case)
@@ -186,11 +155,11 @@ public class Echo {
 
             if ("3".equals(type)) {
                 typeInfo = "replay";
-                status = reqString[1];
+                status = reqString[1].split(" ")[0];
                 jobId = parseJobId(getBody());
             } else if ("2".equals(type)) {
                 typeInfo = "response";
-                status = reqString[1];
+                status = reqString[1].split(" ")[0];
                 jobId = parseJobId(getBody());
             } else if ("1".equals(type)) {
                 typeInfo = "request";
