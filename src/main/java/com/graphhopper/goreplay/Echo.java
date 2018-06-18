@@ -77,9 +77,12 @@ public class Echo {
                             if (messages != null && messages.size() == 2) {
                                 Message request = messages.get(0);
                                 Message response = messages.get(1);
-                                if (!message.status.equals(response.status))
-                                    System.err.println("status doesn't match. replay: " + message.status + " vs response: " + response.status + " for " + request);
-                                else if (message.getJobId().length() > 0) {
+                                if (!message.status.equals(response.status)) {
+                                    System.err.println("status doesn't match. replay: " + message.status + " vs response: " + response.status + " for " + messages);
+                                    if (!message.status.contains("200")) {
+                                        System.err.println(request.getPath() + " -> \n" + message.getBody());
+                                    }
+                                } else if (message.getJobId().length() > 0) {
                                     // System.err.println("set response job_id: " + response.getJobId() + " to replay job_id: " + message.getJobId());
                                     replayJobIds.put(response.getJobId(), message.getJobId());
                                 }
@@ -149,7 +152,7 @@ public class Echo {
         final String id;
         int enqueued = 0;
         String jobId = "";
-        String status;
+        String status = "";
         String path = "";
 
         public Message(String raw) {
@@ -210,7 +213,10 @@ public class Echo {
 
         @Override
         public String toString() {
-            return typeInfo + " " + id + " " + path;
+            String str = typeInfo + " " + id + " " + path;
+            if (status.length() > 0)
+                str += " (status " + status + ")";
+            return str;
         }
 
         public String toHexMessage() {
