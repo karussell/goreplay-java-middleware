@@ -52,20 +52,20 @@ public class Echo {
                                 String jobId = path.substring(fromIndex, toIndex);
                                 String replayJobId = replayJobIds.get(jobId);
                                 if (replayJobId == null) {
-                                    // re-queue if jobId not yet there but don't do this infinite
+                                    // re-queue if jobId not yet there but wait ~5sec maximum
                                     message.enqueued++;
-                                    if (message.enqueued < 4) {
+                                    if (message.enqueued < 50) {
                                         // now that we are decoupled from writing we can wait a bit
-                                        Thread.sleep(1000);
+                                        Thread.sleep(100);
                                         queue.offer(message);
                                     } else {
-                                        System.err.println("did not found replay job_id " + jobId + " for " + message);
+                                        System.err.println("did not found replay job_id for " + message);
                                     }
                                     continue;
                                 }
 
                                 String newPath = path.substring(0, solutionIndex) + "/solution/" + replayJobIds.get(jobId) + path.substring(toIndex);
-                                System.err.println("setPath " + path + " vs " + newPath);
+                                // System.err.println("setPath " + path + " vs " + newPath);
                                 message.setPath(newPath);
                             }
                         } else if (message.getTypeInfo().equals("response")) {
@@ -78,9 +78,9 @@ public class Echo {
                                 Message request = messages.get(0);
                                 Message response = messages.get(1);
                                 if (!message.status.equals(response.status))
-                                    System.err.println("status doesn't match. replay: " + message.status + " vs response: " + response.status + " for " + request.getPath());
+                                    System.err.println("status doesn't match. replay: " + message.status + " vs response: " + response.status + " for " + request);
                                 else if (message.getJobId().length() > 0) {
-                                    System.err.println("set response job_id: " + response.getJobId() + " to replay job_id: " + message.getJobId());
+                                    // System.err.println("set response job_id: " + response.getJobId() + " to replay job_id: " + message.getJobId());
                                     replayJobIds.put(response.getJobId(), message.getJobId());
                                 }
                             }
