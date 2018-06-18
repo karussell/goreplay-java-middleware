@@ -77,13 +77,20 @@ public class Echo {
                             if (messages != null && messages.size() == 2) {
                                 Message request = messages.get(0);
                                 Message response = messages.get(1);
+                                // TODO order can be mixed up due to re-queuing?
+                                if (request.getTypeInfo().equals("response")) {
+                                    request = messages.get(1);
+                                    response = messages.get(0);
+                                }
                                 if (!message.status.equals(response.status)) {
+                                    messages.add(message);
                                     System.err.println("status doesn't match. replay: " + message.status + " vs response: " + response.status + " for " + messages);
                                     if (!message.status.contains("200")) {
                                         System.err.println(request.getPath() + " -> \n" + message.getBody());
                                     }
                                 } else if (message.getJobId().length() > 0) {
                                     // System.err.println("set response job_id: " + response.getJobId() + " to replay job_id: " + message.getJobId());
+                                    // TODO memory leak if used for many requests
                                     replayJobIds.put(response.getJobId(), message.getJobId());
                                 }
                             }
