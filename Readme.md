@@ -1,7 +1,11 @@
-## A stateful middleware for goreplay in Java
+# A stateful middleware for goreplay in Java
 
-## build
+## Build
 mvn clean install
 
-## usage
+## Usage
 java -jar target/testing-goreplay-*.jar
+
+## License
+
+Apache License 2.0

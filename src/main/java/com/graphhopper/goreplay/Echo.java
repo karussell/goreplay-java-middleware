@@ -32,7 +32,7 @@ public class Echo {
         // messages indexed via message.id
         final Map<String, List<Message>> allMessages = new ConcurrentHashMap<String, List<Message>>();
         // jobIds (from replays) indexed via jobId (from original request)
-        final Map<String, String> jobIds = new ConcurrentHashMap<String, String>();
+        final Map<String, String> replayJobIds = new ConcurrentHashMap<String, String>();
         new Thread() {
             @Override
             public void run() {
@@ -44,23 +44,27 @@ public class Echo {
 
                         if (message.getTypeInfo().equals("request") && solutionIndex >= 0) {
                             int fromIndex = solutionIndex + 10;
-                            int toIndex = Math.min(path.indexOf("?", fromIndex), path.indexOf("/", fromIndex));
+                            int toIndex = path.indexOf("?", fromIndex);
+                            if (toIndex < 0)
+                                toIndex = path.length();
+
                             if (fromIndex >= 0 && toIndex > 0) {
                                 String jobId = path.substring(fromIndex, toIndex);
-                                String otherJobId = jobIds.get(jobId);
-                                if (otherJobId == null) {
+                                String replayJobId = replayJobIds.get(jobId);
+                                if (replayJobId == null) {
                                     // re-queue if jobId not yet there but don't do this infinite
                                     message.enqueued++;
                                     if (message.enqueued < 3) {
+                                        System.err.println("re-queue " + message + " as job_id not found:" + jobId);
                                         queue.offer(message);
                                     } else {
-                                        System.err.println("did not found job id for " + message);
+                                        System.err.println("did not found replay job_id " + jobId + " for " + message);
                                     }
                                     continue;
                                 }
 
-                                String newPath = path.substring(0, solutionIndex) + "/solution/" + jobIds.get(jobId) + path.substring(toIndex);
-
+                                String newPath = path.substring(0, solutionIndex) + "/solution/" + replayJobIds.get(jobId) + path.substring(toIndex);
+                                System.err.println("setPath " + path + " vs " + newPath);
                                 message.setPath(newPath);
                             }
                         } else if (message.getTypeInfo().equals("response")) {
@@ -73,10 +77,10 @@ public class Echo {
                                 Message request = messages.get(0);
                                 Message response = messages.get(1);
                                 if (!message.status.equals(response.status))
-                                    System.err.println("status doesn't match " + message.status + " vs " + response.status + " for " + request.getPath());
+                                    System.err.println("status doesn't match. replay: " + message.status + " vs response: " + response.status + " for " + request.getPath());
                                 else if (message.getJobId().length() > 0) {
-                                    System.err.println("response job id: " + response.getJobId() + " vs. replay job id: " + message.getJobId());
-                                    jobIds.put(response.getJobId(), message.getJobId());
+                                    System.err.println("set response job_id: " + response.getJobId() + " to replay job_id: " + message.getJobId());
+                                    replayJobIds.put(response.getJobId(), message.getJobId());
                                 }
                             }
                         }
@@ -116,8 +120,13 @@ public class Echo {
 //Content-Type: application/json\r\n
 //Vary: Accept-Encoding\r\n
 //Content-Length: 105\r\n
-//
+//\r\n
 //{"distances":[[9010]],"times":[[708]],"info":{"copyrights":["GraphHopper","OpenStreetMap contributors"]}}
+
+// for a POST request
+//1 047ec018ab89a2ddbc2e4ec21696f49943e93297\r\n
+//POST / HTTP/1.1\r\n
+//...
 
     static String parseJobId(String body) {
         // TODO would be a bit easier with a json lib, but for now it is sufficient
@@ -140,7 +149,6 @@ public class Echo {
         int enqueued = 0;
         String jobId = "";
         String status;
-        String method = "";
         String path = "";
 
         public Message(String raw) {
@@ -164,7 +172,6 @@ public class Echo {
             } else if ("1".equals(type)) {
                 typeInfo = "request";
                 // GET /xy
-                method = reqString[1].split(" ")[0];
                 path = reqString[1].split(" ")[1];
             } else
                 throw new IllegalStateException("unknown message type " + type);
@@ -174,21 +181,15 @@ public class Echo {
             return typeInfo;
         }
 
-        public String getMethod() {
-            return method;
-        }
-
-        public void setJobId(String jobId) {
-            this.jobId = jobId;
-        }
-
         public void setPath(String path) {
             if (type.equals("1")) {
-                if (!path.endsWith("\r"))
-                    path += "\r";
-
                 this.path = path;
-                reqString[1] = method + " " + path;
+                String reqLine = reqString[1];
+                int to1Index = reqLine.indexOf(" ");
+                int to2Index = reqLine.indexOf(" ", to1Index + 1);
+                if (to1Index < 0 || to2Index < 0)
+                    throw new IllegalStateException("Wrong request format " + reqLine + " for message " + id);
+                reqString[1] = reqLine.substring(0, to1Index + 1) + path + reqLine.substring(to2Index);
             } else {
                 throw new IllegalArgumentException("URL only valid for request but was " + typeInfo);
             }
