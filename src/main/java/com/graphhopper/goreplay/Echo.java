@@ -78,9 +78,9 @@ public class Echo {
                         String path = message.getPath();
                         int solutionIndex = path.indexOf("/solution/");
 
-                        if (message.getType().equals("request") && solutionIndex >= 0) {
+                        if (message.getTypeInfo().equals("request") && solutionIndex >= 0) {
                             int fromIndex = solutionIndex + 10;
-                            int toIndex = path.indexOf("/", fromIndex);
+                            int toIndex = Math.min(path.indexOf("?", fromIndex), path.indexOf("/", fromIndex));
                             if (fromIndex >= 0 && toIndex > 0) {
                                 String jobId = path.substring(fromIndex, toIndex);
                                 String otherJobId = jobIds.get(jobId);
@@ -99,16 +99,16 @@ public class Echo {
 
                                 message.setPath(newPath);
                             }
-                        } else if (message.getType().equals("response")) {
+                        } else if (message.getTypeInfo().equals("response")) {
                             System.err.println("response: " + message);
 
-                        } else if (message.getType().equals("replay")) {
+                        } else if (message.getTypeInfo().equals("replay")) {
                             // should contain 2 messages: request and response
                             List<Message> messages = allMessages.get(message.id);
                             if (messages != null && messages.size() == 2) {
                                 Message response = messages.get(1);
                                 if (!message.status.equals(response.status))
-                                    System.err.println("status do not match " + message + " vs " + messages.get(0));
+                                    System.err.println("status doesn't match " + message + " " + message.status + " vs " + messages.get(0) + " " + message.status);
                                 else if (message.getJobId().length() > 0) {
                                     System.err.println("response job id: " + response.getJobId() + " vs. replay job id: " + message.getJobId());
                                     jobIds.put(response.getJobId(), message.getJobId());
@@ -156,7 +156,7 @@ public class Echo {
             int index = body.indexOf("\"", body.indexOf(":"));
             int toIndex = body.indexOf("\"", index + 1);
             if (index >= 0 && toIndex > 0) {
-                String jobId = body.substring(index, toIndex);
+                String jobId = body.substring(index + 1, toIndex);
                 return jobId;
             }
         }
@@ -201,8 +201,8 @@ public class Echo {
                 throw new IllegalStateException("unknown message type " + type);
         }
 
-        public String getType() {
-            return type;
+        public String getTypeInfo() {
+            return typeInfo;
         }
 
         public String getMethod() {
