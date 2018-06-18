@@ -77,7 +77,7 @@ public class Echo {
                             if (messages != null && messages.size() == 2) {
                                 Message request = messages.get(0);
                                 Message response = messages.get(1);
-                                // TODO order can be mixed up due to re-queuing?
+                                // order can be mixed up due to re-queuing
                                 if (request.getTypeInfo().equals("response")) {
                                     request = messages.get(1);
                                     response = messages.get(0);
