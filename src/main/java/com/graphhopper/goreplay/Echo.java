@@ -155,11 +155,11 @@ public class Echo {
 
             if ("3".equals(type)) {
                 typeInfo = "replay";
-                status = reqString[1].split(" ")[0];
+                status = reqString[1].split(" ")[1];
                 jobId = parseJobId(getBody());
             } else if ("2".equals(type)) {
                 typeInfo = "response";
-                status = reqString[1].split(" ")[0];
+                status = reqString[1].split(" ")[1];
                 jobId = parseJobId(getBody());
             } else if ("1".equals(type)) {
                 typeInfo = "request";
