@@ -120,7 +120,7 @@ public class Echo {
     }
 
     static void log(String s) {
-        log(new Date() + " " + s);
+        System.err.println(new Date() + " " + s);
     }
 
 // the raw parameter contains the following message (a replay in this case)
