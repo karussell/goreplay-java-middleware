@@ -5,10 +5,7 @@ import org.apache.commons.codec.binary.Hex;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -25,7 +22,7 @@ public class Echo {
 
         BufferedReader stdin = new BufferedReader(new InputStreamReader(System.in));
         String line;
-        System.err.println("start");
+        log("start");
 
         // create some kind of unbounded blocking queue
         final LinkedBlockingQueue<Message> queue = new LinkedBlockingQueue<Message>();
@@ -59,17 +56,17 @@ public class Echo {
                                         Thread.sleep(100);
                                         queue.offer(message);
                                     } else {
-                                        System.err.println("did not found replay job_id for " + message);
+                                        log("did not found replay job_id for " + message);
                                     }
                                     continue;
                                 }
 
                                 String newPath = path.substring(0, solutionIndex) + "/solution/" + replayJobIds.get(jobId) + path.substring(toIndex);
-                                // System.err.println("setPath " + path + " vs " + newPath);
+                                // log("setPath " + path + " vs " + newPath);
                                 message.setPath(newPath);
                             }
                         } else if (message.getTypeInfo().equals("response")) {
-                            // System.err.println("response: " + message);
+                            // log("response: " + message);
 
                         } else if (message.getTypeInfo().equals("replay")) {
                             // should contain 2 messages: request and response
@@ -84,12 +81,12 @@ public class Echo {
                                 }
                                 if (!message.status.equals(response.status)) {
                                     messages.add(message);
-                                    System.err.println("status doesn't match. replay: " + message.status + " vs response: " + response.status + " for " + messages);
+                                    log("status doesn't match. replay: " + message.status + " vs response: " + response.status + " for " + messages);
                                     if (!message.status.contains("200")) {
-                                        System.err.println(request.getPath() + " -> \n" + message.getBody());
+                                        log(request.getPath() + " -> \n" + message.getBody());
                                     }
                                 } else if (message.getJobId().length() > 0) {
-                                    // System.err.println("set response job_id: " + response.getJobId() + " to replay job_id: " + message.getJobId());
+                                    // log("set response job_id: " + response.getJobId() + " to replay job_id: " + message.getJobId());
                                     // TODO memory leak if used for many requests
                                     replayJobIds.put(response.getJobId(), message.getJobId());
                                 }
@@ -120,6 +117,10 @@ public class Echo {
 
     static String decodeHexString(String s) throws DecoderException {
         return new String(Hex.decodeHex(s.toCharArray()));
+    }
+
+    static void log(String s) {
+        log(new Date() + " " + s);
     }
 
 // the raw parameter contains the following message (a replay in this case)
