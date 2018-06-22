@@ -18,6 +18,15 @@ mvn clean install
 ## Usage
 java -jar target/testing-goreplay-*.jar
 
+Put this in a shell like jmiddle.sh and then call goreplay via
+
+```bash
+sudo ./goreplay --input-raw :8989 --middleware "jmiddle.sh" --output-http-track-response --input-raw-track-response --output-http "http://somewherelese" --prettify-http --output-http-timeout 60s
+```
+
+As the output is not stdout but stderr (goreplay is using stdout) you need
+to use `2> output.log` to pipe the output into a file.
+
 ## License
 
 Apache License 2.0
