@@ -17,7 +17,6 @@ public class Echo {
             for (String arg : args) {
                 System.out.println(arg);
             }
-
         }
 
         BufferedReader stdin = new BufferedReader(new InputStreamReader(System.in));
@@ -56,7 +55,7 @@ public class Echo {
                                         Thread.sleep(100);
                                         queue.offer(message);
                                     } else {
-                                        log("did not found replay job_id for " + message);
+                                        log("didn't find replay job_id for " + message);
                                     }
                                     continue;
                                 }
@@ -81,9 +80,9 @@ public class Echo {
                                 }
                                 if (!message.status.equals(response.status)) {
                                     messages.add(message);
-                                    log("status doesn't match. replay: " + message.status + " vs response: " + response.status + " for " + messages);
+                                    log("status different. replay: " + message.status + " vs response: " + response.status + " for " + messages);
                                     if (!message.status.contains("200")) {
-                                        log(request.getPath() + " -> \n" + message.getBody());
+                                        log(request.getPath() + " -> \n" + request.getBody());
                                     }
                                 } else if (message.getJobId().length() > 0) {
                                     // log("set response job_id: " + response.getJobId() + " to replay job_id: " + message.getJobId());
